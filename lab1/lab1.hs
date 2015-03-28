@@ -63,7 +63,7 @@ iter f a b =
 newton :: (Float -> Float) -> Float -> Float -> Result
 newton f a b =
     let f' x = 1 + x**(-0.5) + x**(-2/3) -- неясно, как здесь следовало поступить:
-                                         -- (f (x+delta) / f x) / delta не даёт достаточной точности.
+                                         -- (f (x+delta) - f x) / delta не даёт достаточной точности.
         newtonA x i
             | abs dx < delta = (x, i)
             | otherwise  = newtonA nx (i+1)
