@@ -11,6 +11,10 @@ import qualified Data.ByteString.Lazy as L
 import qualified Data.ByteString.Char8 as C
 import Network (withSocketsDo)
 
+import Data.List
+import Data.Tuple
+import Data.Ord
+
 -- почтовый адрес
 email = "alekseev@phystech.edu"
 -- общий тип для возвращаемых вашими функциями значений, где первая часть кортежа это само значение функции, вторая - кол-во операций
@@ -22,46 +26,54 @@ delta = 1e-10
 
 tailor :: Float -> Result
 tailor x =
-    let cs = [(-1)^(i-1) * x^(2*i+1) / fromIntegral (4 * i^2 - 1) :: Float | i <- [1..]]
-        good = takeWhile (\x -> abs x >= delta) cs
+    let noms   = [(-1)^(i-1) * x^(2*i+1) | i <- [1..]]
+        denoms = [fromIntegral 4*i^2 - 1 :: Float | i <- [1..]]
+        cs    = zipWith (/) noms denoms
+        good  = takeWhile (\x -> abs x >= delta) cs
     in (sum good, toInteger (length good) )
 
 tailorA :: Float -> Result
 tailorA x =
-    let minusX2 = (-x) * x
-        tailorA' :: Float -> Result -> Result
-        tailorA' px r = if abs deltaY < delta
-            then (acc, i-1)
-            else tailorA' nx (acc + deltaY, i+1)
-                where (acc, i) = r
-                      nx = px * minusX2
-                      deltaY = nx / fromIntegral (4 * i^2 - 1) :: Float
-    in tailorA' (-x) (0.0, 1)
+    let multiplier = (-x) * x
+        noms   = iterate (* multiplier) (x^3)
+        denoms = [fromIntegral 4*i^2 - 1 :: Float | i <- [1..]]
+        cs    = zipWith (/) noms denoms
+        good  = takeWhile (\x -> abs x >= delta) cs
+    in (sum good, toInteger (length good) )
 
 printTailor = mapM_ putStrLn $
     map
         (\ x ->
             let ((firstRes, firstCou), (secondRes, secondCou)) = (tailor x, tailorA x)
             in show x ++ "\t" ++ show firstRes ++ "\t" ++ show firstCou ++ "\t" ++ show secondRes ++ "\t" ++ show secondCou ++ "\t" ++ show (fTailor x))
-        [a, a + (b - a) / n .. b]
+        [a, a + (b - a) / (fromIntegral n :: Float) .. b]
 
 -- *** Вторая часть
 
-fSolve = \x -> x -- функция, решение которой ищем
+fSolve x = x + sqrt x + x ** (1/3) - 2.5 -- функция, решение которой ищем
+(aSolve, bSolve) = (0.4, 1.0)
 
 iter :: (Float -> Float) -> Float -> Float -> Result
-iter f a b = (42, 0)
+iter f a b =
+    let xs = [a, a+(b-a)/(fromIntegral n :: Float) .. b]
+        ys = map (abs . f) xs
+    in (snd $ minimumBy (comparing fst) (zip ys xs), n)
 
 newton :: (Float -> Float) -> Float -> Float -> Result
 newton f a b = (42, 0)
 
 dichotomy =
     --для функций с аккумулятором удобно ставить его в начало
-    let dichotomyA i f a b = (42, 0)
+    let dichotomyA i f a b
+            | my > delta    = dichotomyA (i+1) f a mx
+            | my < (-delta) = dichotomyA (i+1) f mx b
+            | otherwise     = (mx, i)
+            where mx = (a + b) / 2.0
+                  my = f mx
     in dichotomyA 0 -- чтобы воспользоваться каррированием
 
 printSolve =
-    mapM_ putStrLn $ map (\f -> show $ f fSolve a b) [iter, newton, dichotomy]
+    mapM_ putStrLn $ map (\f -> show $ f fSolve aSolve bSolve) [iter, newton, dichotomy]
 
 main = do
     withSocketsDo $ do
