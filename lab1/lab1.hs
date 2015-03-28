@@ -20,14 +20,14 @@ email = "alekseev@phystech.edu"
 -- общий тип для возвращаемых вашими функциями значений, где первая часть кортежа это само значение функции, вторая - кол-во операций
 type Result = (Float, Integer)
 
-fTailor x = (1 + x ** 2) / 2.0 * atan x - x / 2.0 -- функция, которую раскладываем
+fTailor x = (1 + x ** 2) / 2 * atan x - x / 2 -- функция, которую раскладываем
 delta = 1e-10
 (n, a, b) = (20, 0.1, 0.6) -- интервал
 
 tailor :: Float -> Result
 tailor x =
     let noms   = [(-1)^(i-1) * x^(2*i+1) | i <- [1..]]
-        denoms = [fromIntegral 4*i^2 - 1 :: Float | i <- [1..]]
+        denoms = [fromIntegral (4 * i^2 - 1) :: Float | i <- [1..]]
         cs    = zipWith (/) noms denoms
         good  = takeWhile (\x -> abs x >= delta) cs
     in (sum good, toInteger (length good) )
@@ -36,7 +36,7 @@ tailorA :: Float -> Result
 tailorA x =
     let multiplier = (-x) * x
         noms   = iterate (* multiplier) (x^3)
-        denoms = [fromIntegral 4*i^2 - 1 :: Float | i <- [1..]]
+        denoms = [fromIntegral (4 * i^2 - 1) :: Float | i <- [1..]]
         cs    = zipWith (/) noms denoms
         good  = takeWhile (\x -> abs x >= delta) cs
     in (sum good, toInteger (length good) )
@@ -46,7 +46,7 @@ printTailor = mapM_ putStrLn $
         (\ x ->
             let ((firstRes, firstCou), (secondRes, secondCou)) = (tailor x, tailorA x)
             in show x ++ "\t" ++ show firstRes ++ "\t" ++ show firstCou ++ "\t" ++ show secondRes ++ "\t" ++ show secondCou ++ "\t" ++ show (fTailor x))
-        [a, a + (b - a) / (fromIntegral n :: Float) .. b]
+        [a, a + (b - a) / n .. b]
 
 -- *** Вторая часть
 
@@ -55,12 +55,22 @@ fSolve x = x + sqrt x + x ** (1/3) - 2.5 -- функция, решение ко�
 
 iter :: (Float -> Float) -> Float -> Float -> Result
 iter f a b =
-    let xs = [a, a+(b-a)/(fromIntegral n :: Float) .. b]
+    let iters = 300
+        xs = [a, a+(b-a)/(fromIntegral iters :: Float) .. b]
         ys = map (abs . f) xs
-    in (snd $ minimumBy (comparing fst) (zip ys xs), n)
+    in (snd $ minimumBy (comparing fst) (zip ys xs), iters)
 
 newton :: (Float -> Float) -> Float -> Float -> Result
-newton f a b = (42, 0)
+newton f a b =
+    let f' x = 1 + x**(-0.5) + x**(-2/3) -- неясно, как здесь следовало поступить:
+                                         -- (f (x+delta) / f x) / delta не даёт достаточной точности.
+        newtonA x i
+            | abs dx < delta = (x, i)
+            | otherwise  = newtonA nx (i+1)
+            where y = f x
+                  dx = y / f' x
+                  nx = x - dx
+    in newtonA ((a+b)/2) 0
 
 dichotomy =
     --для функций с аккумулятором удобно ставить его в начало
