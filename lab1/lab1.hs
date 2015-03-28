@@ -26,18 +26,18 @@ delta = 1e-10
 
 tailor :: Float -> Result
 tailor x =
-    let noms   = [(-1)^(i-1) * x^(2*i+1) | i <- [1..]]
+    let nums   = [(-1)^(i-1) * x^(2*i+1) | i <- [1..]]
         denoms = [fromIntegral (4 * i^2 - 1) :: Float | i <- [1..]]
-        cs    = zipWith (/) noms denoms
+        cs    = zipWith (/) nums denoms
         good  = takeWhile (\x -> abs x >= delta) cs
     in (sum good, toInteger (length good) )
 
 tailorA :: Float -> Result
 tailorA x =
     let multiplier = (-x) * x
-        noms   = iterate (* multiplier) (x^3)
+        nums   = iterate (* multiplier) (x^3)
         denoms = [fromIntegral (4 * i^2 - 1) :: Float | i <- [1..]]
-        cs    = zipWith (/) noms denoms
+        cs    = zipWith (/) nums denoms
         good  = takeWhile (\x -> abs x >= delta) cs
     in (sum good, toInteger (length good) )
 
