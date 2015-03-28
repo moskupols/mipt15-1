@@ -24,22 +24,18 @@ fTailor x = (1 + x ** 2) / 2 * atan x - x / 2 -- функция, которую 
 delta = 1e-10
 (n, a, b) = (20, 0.1, 0.6) -- интервал
 
-tailor :: Float -> Result
-tailor x =
-    let nums   = [(-1)^(i-1) * x^(2*i+1) | i <- [1..]]
-        denoms = [fromIntegral (4 * i^2 - 1) :: Float | i <- [1..]]
+tailorsCommon :: [Float] -> Result
+tailorsCommon nums =
+    let denoms = [fromIntegral (4 * i^2 - 1) :: Float | i <- [1..]]
         cs    = zipWith (/) nums denoms
         good  = takeWhile (\x -> abs x >= delta) cs
     in (sum good, toInteger (length good) )
 
+tailor :: Float -> Result
+tailor x = tailorsCommon [(-1)^(i-1) * x^(2*i+1) | i <- [1..]]
+
 tailorA :: Float -> Result
-tailorA x =
-    let multiplier = (-x) * x
-        nums   = iterate (* multiplier) (x^3)
-        denoms = [fromIntegral (4 * i^2 - 1) :: Float | i <- [1..]]
-        cs    = zipWith (/) nums denoms
-        good  = takeWhile (\x -> abs x >= delta) cs
-    in (sum good, toInteger (length good) )
+tailorA x = tailorsCommon $ iterate (* ((-x) * x)) (x^3)
 
 printTailor = mapM_ putStrLn $
     map
